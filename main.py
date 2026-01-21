@@ -1,21 +1,58 @@
+"""
+Quizly - YouTube Video to Quiz Generator
+
+Dieses Modul konvertiert YouTube-Videos in interaktive Quizze.
+Pipeline: YouTube URL → Audio Download → Whisper Transkription → Gemini Quiz-Generierung
+"""
+
+import os
+import re
+import json
 import yt_dlp
 import whisper
 from google import genai
-import os
-import json
-import re
+from dotenv import load_dotenv
 
-GEMINI_API_KEY = "AIzaSyCYaLQIus6CqFQc0Vna80LjToeeflGIxOM"
+# Umgebungsvariablen laden
+load_dotenv()
+
+# Gemini API Key aus Umgebungsvariable
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY nicht in .env gefunden!")
+
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+
 def extract_video_id(url: str) -> str:
+    """
+    Extrahiert die Video-ID aus einer YouTube-URL.
+    
+    Args:
+        url: YouTube URL (verschiedene Formate unterstützt)
+        
+    Returns:
+        Video-ID als String
+    """
     if "v=" in url:
         return url.split("v=")[1].split("&")[0]
     elif "youtu.be/" in url:
         return url.split("youtu.be/")[1].split("?")[0]
     return url
 
+
 def download_audio(url: str, output_path: str = "audio") -> str:
+    """
+    Lädt Audio von einem YouTube-Video herunter.
+    
+    Args:
+        url: YouTube Video URL
+        output_path: Zielverzeichnis für Audio-Datei
+        
+    Returns:
+        Pfad zur heruntergeladenen Audio-Datei
+    """
     video_id = extract_video_id(url)
     normalized_url = f"https://www.youtube.com/watch?v={video_id}"
     
@@ -36,7 +73,18 @@ def download_audio(url: str, output_path: str = "audio") -> str:
         print(f"✅ Audio heruntergeladen: {filename}")
         return filename
 
+
 def transcribe_audio(audio_path: str, model_name: str = "base") -> str:
+    """
+    Transkribiert eine Audio-Datei mit Whisper AI.
+    
+    Args:
+        audio_path: Pfad zur Audio-Datei
+        model_name: Whisper Modell (tiny, base, small, medium, large)
+        
+    Returns:
+        Transkribierter Text
+    """
     print(f"🔄 Lade Whisper-Modell '{model_name}'...")
     model = whisper.load_model(model_name)
     
@@ -46,13 +94,33 @@ def transcribe_audio(audio_path: str, model_name: str = "base") -> str:
     print("✅ Transkription abgeschlossen!")
     return result["text"]
 
+
 def clean_json_response(text: str) -> str:
+    """
+    Bereinigt JSON-Response von Markdown-Formatierung.
+    
+    Args:
+        text: Rohe Antwort von Gemini
+        
+    Returns:
+        Bereinigter JSON-String
+    """
     text = re.sub(r'^```json\s*', '', text.strip())
     text = re.sub(r'^```\s*', '', text)
     text = re.sub(r'\s*```$', '', text)
     return text.strip()
 
+
 def generate_quiz(transcript: str) -> dict:
+    """
+    Generiert ein Quiz aus einem Transkript mit Gemini AI.
+    
+    Args:
+        transcript: Transkribierter Text des Videos
+        
+    Returns:
+        Quiz-Dictionary mit title, description und questions
+    """
     print("🔄 Generiere Quiz mit Gemini...")
     
     prompt = f"""Based on the following transcript, generate a quiz in valid JSON format.
@@ -91,7 +159,14 @@ Transcript:
     print(f"✅ Quiz '{quiz['title']}' mit {len(quiz['questions'])} Fragen generiert!")
     return quiz
 
+
 def run_quiz(quiz: dict):
+    """
+    Führt ein Quiz interaktiv in der Konsole aus.
+    
+    Args:
+        quiz: Quiz-Dictionary mit title, description und questions
+    """
     print("\n" + "="*50)
     print(f"🎯 {quiz['title']}")
     print(f"📝 {quiz['description']}")
@@ -124,6 +199,7 @@ def run_quiz(quiz: dict):
     print("="*50)
     print(f"🏆 Ergebnis: {score}/{len(questions)} Punkten")
     print("="*50)
+
 
 if __name__ == "__main__":
     url = input("YouTube-URL eingeben: ")

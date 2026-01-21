@@ -1,0 +1,1 @@
+"""Quizly Django Project Configuration."""

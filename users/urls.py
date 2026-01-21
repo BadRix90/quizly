@@ -1,12 +1,4 @@
-"""
-URL Routing für User Authentication.
-
-Endpoints:
-- POST /api/register/
-- POST /api/login/
-- POST /api/logout/
-- POST /api/token/refresh/
-"""
+"""URL routing for user authentication endpoints."""
 
 from django.urls import path
 from .views import RegisterView, LoginView, LogoutView, TokenRefreshView

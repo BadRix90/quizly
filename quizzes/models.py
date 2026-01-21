@@ -1,21 +1,11 @@
-"""
-Models für Quiz und Question.
-
-Struktur gemäß endpoint.md Response:
-- Quiz: id, title, description, video_url, created_at, updated_at, user
-- Question: id, question_title, question_options, answer, created_at, updated_at
-"""
+"""Quiz and Question models according to endpoint.md response structure."""
 
 from django.db import models
 from django.contrib.auth.models import User
 
 
 class Quiz(models.Model):
-    """
-    Quiz Model.
-    
-    Speichert Quiz-Metadaten und Referenz zum YouTube Video.
-    """
+    """Quiz model storing metadata and YouTube video reference."""
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -38,12 +28,7 @@ class Quiz(models.Model):
 
 
 class Question(models.Model):
-    """
-    Question Model.
-    
-    Speichert einzelne Quizfragen mit Optionen und Antwort.
-    question_options wird als JSON-Array gespeichert.
-    """
+    """Question model storing quiz questions with options as JSON array."""
 
     quiz = models.ForeignKey(
         Quiz,

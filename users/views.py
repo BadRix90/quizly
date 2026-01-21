@@ -1,12 +1,4 @@
-"""
-Views für User Authentication.
-
-Endpoints gemäß endpoint.md:
-- POST /api/register/ - Registrierung
-- POST /api/login/ - Anmeldung mit Cookie-Setting
-- POST /api/logout/ - Abmeldung mit Token-Blacklist
-- POST /api/token/refresh/ - Token erneuern
-"""
+"""Views for user authentication endpoints."""
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -20,17 +12,12 @@ from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 
 class RegisterView(APIView):
-    """
-    POST /api/register/
-    
-    Registriert einen neuen Benutzer.
-    Status Codes: 201, 400, 500
-    """
+    """Handle user registration via POST /api/register/."""
 
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """Erstellt neuen Benutzer nach Validierung."""
+        """Validate input and create new user, returns 201 or 400."""
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -42,17 +29,12 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-    """
-    POST /api/login/
-    
-    Meldet Benutzer an und setzt Auth-Cookies.
-    Status Codes: 200, 401, 500
-    """
+    """Handle user login via POST /api/login/."""
 
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """Authentifiziert User und setzt JWT Cookies."""
+        """Authenticate user and set JWT cookies, returns 200 or 401."""
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -71,7 +53,7 @@ class LoginView(APIView):
         return response
 
     def _set_auth_cookies(self, response, refresh):
-        """Setzt access_token und refresh_token Cookies."""
+        """Set access_token and refresh_token as HTTP-only cookies."""
         jwt_settings = settings.SIMPLE_JWT
 
         response.set_cookie(
@@ -93,17 +75,12 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
-    """
-    POST /api/logout/
-    
-    Meldet Benutzer ab und invalidiert Tokens.
-    Status Codes: 200, 401, 500
-    """
+    """Handle user logout via POST /api/logout/."""
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Blacklistet Refresh Token und löscht Cookies."""
+        """Blacklist refresh token and delete auth cookies."""
         refresh_token = request.COOKIES.get(
             settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
         )
@@ -119,7 +96,7 @@ class LogoutView(APIView):
         return response
 
     def _blacklist_token(self, token_str):
-        """Fügt Token zur Blacklist hinzu."""
+        """Add token to blacklist, silently ignore invalid tokens."""
         try:
             token = RefreshToken(token_str)
             token.blacklist()
@@ -127,7 +104,7 @@ class LogoutView(APIView):
             pass
 
     def _delete_auth_cookies(self, response):
-        """Löscht Auth Cookies."""
+        """Remove access_token and refresh_token cookies."""
         jwt_settings = settings.SIMPLE_JWT
         response.delete_cookie(
             jwt_settings.get('AUTH_COOKIE', 'access_token'),
@@ -140,17 +117,12 @@ class LogoutView(APIView):
 
 
 class TokenRefreshView(APIView):
-    """
-    POST /api/token/refresh/
-    
-    Erneuert Access-Token mittels Refresh-Token.
-    Status Codes: 200, 401, 500
-    """
+    """Handle token refresh via POST /api/token/refresh/."""
 
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """Erstellt neuen Access Token aus Refresh Token."""
+        """Generate new access token from refresh token cookie."""
         refresh_token = request.COOKIES.get(
             settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
         )
@@ -178,7 +150,7 @@ class TokenRefreshView(APIView):
         return response
 
     def _set_access_cookie(self, response, access_token):
-        """Setzt neuen access_token Cookie."""
+        """Set new access_token cookie."""
         jwt_settings = settings.SIMPLE_JWT
         response.set_cookie(
             key=jwt_settings.get('AUTH_COOKIE', 'access_token'),

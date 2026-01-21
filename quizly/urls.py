@@ -1,7 +1,7 @@
 """
 URL configuration for quizly project.
 
-Alle API-Routen unter /api/ gemäß endpoint.md:
+All API routes under /api/ according to endpoint.md:
 - /api/register/
 - /api/login/
 - /api/logout/

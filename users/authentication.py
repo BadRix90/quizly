@@ -1,27 +1,14 @@
-"""
-Custom JWT Authentication for HTTP-Only Cookies.
-
-Reads JWT token from cookies instead of Authorization header.
-"""
+"""Custom JWT authentication reading tokens from HTTP-Only cookies."""
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
 
 
 class CookieJWTAuthentication(JWTAuthentication):
-    """
-    JWT Authentication that reads token from HTTP-Only cookies.
-    
-    Uses 'access_token' cookie instead of Authorization header.
-    """
+    """JWT authentication using access_token cookie instead of Authorization header."""
 
     def authenticate(self, request):
-        """
-        Authenticate request using access_token cookie.
-        
-        Returns:
-            Tuple (user, validated_token) or None
-        """
+        """Authenticate request using access_token cookie, returns (user, token) or None."""
         raw_token = request.COOKIES.get(
             settings.SIMPLE_JWT.get('AUTH_COOKIE', 'access_token')
         )

@@ -1,11 +1,4 @@
-"""
-URL Routing für Quiz Management.
-
-Endpoints:
-- POST /api/createQuiz/
-- GET /api/quizzes/
-- GET/PATCH/DELETE /api/quizzes/{id}/
-"""
+"""URL routing for quiz management endpoints."""
 
 from django.urls import path
 from .views import CreateQuizView, QuizListView, QuizDetailView

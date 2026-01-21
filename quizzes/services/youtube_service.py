@@ -1,9 +1,4 @@
-"""
-YouTube Audio Download Service.
-
-Verwendet yt-dlp zum Herunterladen von Audio aus YouTube Videos.
-Benötigt: FFMPEG global installiert!
-"""
+"""YouTube audio download service using yt-dlp. Requires FFMPEG globally installed."""
 
 import os
 import yt_dlp
@@ -11,15 +6,7 @@ from django.conf import settings
 
 
 def extract_video_id(url: str) -> str:
-    """
-    Extrahiert Video-ID aus YouTube URL.
-    
-    Args:
-        url: YouTube URL (verschiedene Formate)
-        
-    Returns:
-        Video-ID als String
-    """
+    """Extract video ID from YouTube URL."""
     if "v=" in url:
         return url.split("v=")[1].split("&")[0]
     elif "youtu.be/" in url:
@@ -28,18 +15,7 @@ def extract_video_id(url: str) -> str:
 
 
 def download_audio(url: str) -> str:
-    """
-    Lädt Audio von YouTube Video herunter.
-    
-    Args:
-        url: YouTube Video URL
-        
-    Returns:
-        Pfad zur Audio-Datei
-        
-    Raises:
-        Exception: Bei Download-Fehler
-    """
+    """Download audio from YouTube video and return file path."""
     video_id = extract_video_id(url)
     output_path = settings.AUDIO_OUTPUT_PATH
     os.makedirs(output_path, exist_ok=True)
@@ -53,7 +29,7 @@ def download_audio(url: str) -> str:
 
 
 def _get_download_options(output_template: str) -> dict:
-    """Erstellt yt-dlp Konfiguration."""
+    """Create yt-dlp configuration options."""
     return {
         "format": "bestaudio/best",
         "outtmpl": output_template,

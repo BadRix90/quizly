@@ -1,15 +1,11 @@
-"""
-Serializers für Quiz und Question.
-
-Response-Struktur exakt wie in endpoint.md definiert.
-"""
+"""Quiz and Question serializers matching endpoint.md response structure."""
 
 from rest_framework import serializers
 from .models import Quiz, Question
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """Serializer für Question Model."""
+    """Serializer for Question model."""
 
     class Meta:
         model = Question
@@ -25,11 +21,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    """
-    Serializer für Quiz Model.
-    
-    Inkludiert verschachtelte Questions.
-    """
+    """Serializer for Quiz model with nested questions."""
 
     questions = QuestionSerializer(many=True, read_only=True)
 
@@ -48,7 +40,7 @@ class QuizSerializer(serializers.ModelSerializer):
 
 
 class QuizUpdateSerializer(serializers.ModelSerializer):
-    """Serializer für PATCH /api/quizzes/{id}/."""
+    """Serializer for PATCH /api/quizzes/{id}/."""
 
     class Meta:
         model = Quiz
@@ -56,12 +48,12 @@ class QuizUpdateSerializer(serializers.ModelSerializer):
 
 
 class CreateQuizSerializer(serializers.Serializer):
-    """Serializer für POST /api/createQuiz/."""
+    """Serializer for POST /api/createQuiz/."""
 
     url = serializers.URLField()
 
     def validate_url(self, value):
-        """Validiert YouTube URL."""
+        """Validate YouTube URL."""
         if 'youtube.com' not in value and 'youtu.be' not in value:
             raise serializers.ValidationError(
                 "URL must be a valid YouTube URL."

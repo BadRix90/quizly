@@ -1,10 +1,4 @@
-"""
-Serializers für User Authentication.
-
-Endpoints:
-- POST /api/register/
-- POST /api/login/
-"""
+"""Serializers for user authentication endpoints."""
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
@@ -12,12 +6,7 @@ from django.contrib.auth import authenticate
 
 
 class RegisterSerializer(serializers.Serializer):
-    """
-    Serializer für Benutzerregistrierung.
-    
-    Request Body:
-        username, password, confirmed_password, email
-    """
+    """Serializer for user registration with username, email and password."""
 
     username = serializers.CharField(max_length=150)
     email = serializers.EmailField()
@@ -25,7 +14,7 @@ class RegisterSerializer(serializers.Serializer):
     confirmed_password = serializers.CharField(write_only=True)
 
     def validate_username(self, value):
-        """Prüft ob Username bereits existiert."""
+        """Validate that username does not already exist."""
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError(
                 "A user with that username already exists."
@@ -33,7 +22,7 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate_email(self, value):
-        """Prüft ob Email bereits existiert."""
+        """Validate that email does not already exist."""
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError(
                 "A user with that email already exists."
@@ -41,7 +30,7 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        """Prüft ob Passwörter übereinstimmen."""
+        """Validate that password and confirmed_password match."""
         if data['password'] != data['confirmed_password']:
             raise serializers.ValidationError(
                 {"confirmed_password": "Passwords do not match."}
@@ -49,7 +38,7 @@ class RegisterSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        """Erstellt neuen User."""
+        """Create and return a new user instance."""
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -59,18 +48,13 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    """
-    Serializer für Benutzeranmeldung.
-    
-    Request Body:
-        username, password
-    """
+    """Serializer for user login with username and password."""
 
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        """Authentifiziert User mit Credentials."""
+        """Authenticate user and attach user object to validated data."""
         user = authenticate(
             username=data['username'],
             password=data['password']
@@ -84,7 +68,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer für User Response."""
+    """Serializer for user response data."""
 
     class Meta:
         model = User

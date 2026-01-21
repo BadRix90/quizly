@@ -1,13 +1,4 @@
-"""
-Views für Quiz Management.
-
-Endpoints gemäß endpoint.md:
-- POST /api/createQuiz/ - Quiz aus YouTube URL erstellen
-- GET /api/quizzes/ - Alle Quizzes des Users
-- GET /api/quizzes/{id}/ - Einzelnes Quiz
-- PATCH /api/quizzes/{id}/ - Quiz aktualisieren
-- DELETE /api/quizzes/{id}/ - Quiz löschen
-"""
+"""Views for quiz management according to endpoint.md."""
 
 import os
 from rest_framework import status
@@ -26,17 +17,12 @@ from .services import download_audio, transcribe_audio, generate_quiz
 
 
 class CreateQuizView(APIView):
-    """
-    POST /api/createQuiz/
-    
-    Erstellt Quiz aus YouTube URL.
-    Status Codes: 201, 400, 401, 500
-    """
+    """POST /api/createQuiz/ - Create quiz from YouTube URL."""
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Erstellt neues Quiz aus YouTube Video."""
+        """Create new quiz from YouTube video."""
         serializer = CreateQuizSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -58,7 +44,7 @@ class CreateQuizView(APIView):
             )
 
     def _create_quiz_from_url(self, url: str, user):
-        """Pipeline: Download -> Transkript -> Quiz."""
+        """Pipeline: Download -> Transcribe -> Generate Quiz."""
         audio_path = download_audio(url)
         transcript = transcribe_audio(audio_path)
         quiz_data = generate_quiz(transcript)
@@ -67,7 +53,7 @@ class CreateQuizView(APIView):
         return quiz
 
     def _save_quiz(self, quiz_data: dict, url: str, user):
-        """Speichert Quiz und Questions in DB."""
+        """Save quiz and questions to database."""
         quiz = Quiz.objects.create(
             title=quiz_data['title'],
             description=quiz_data['description'],
@@ -78,7 +64,7 @@ class CreateQuizView(APIView):
         return quiz
 
     def _save_questions(self, quiz, questions: list):
-        """Speichert Questions für Quiz."""
+        """Save questions for quiz."""
         for q in questions:
             Question.objects.create(
                 quiz=quiz,
@@ -88,45 +74,35 @@ class CreateQuizView(APIView):
             )
 
     def _cleanup_audio(self, audio_path: str):
-        """Löscht temporäre Audio-Datei."""
+        """Delete temporary audio file."""
         if os.path.exists(audio_path):
             os.remove(audio_path)
 
 
 class QuizListView(APIView):
-    """
-    GET /api/quizzes/
-    
-    Listet alle Quizzes des authentifizierten Users.
-    Status Codes: 200, 401, 500
-    """
+    """GET /api/quizzes/ - List all quizzes for authenticated user."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """Gibt alle Quizzes des Users zurück."""
+        """Return all quizzes for current user."""
         quizzes = Quiz.objects.filter(user=request.user)
         serializer = QuizSerializer(quizzes, many=True)
         return Response(serializer.data)
 
 
 class QuizDetailView(APIView):
-    """
-    GET/PATCH/DELETE /api/quizzes/{id}/
-    
-    Einzelnes Quiz abrufen, aktualisieren oder löschen.
-    Status Codes: 200, 204, 400, 401, 403, 404, 500
-    """
+    """GET/PATCH/DELETE /api/quizzes/{id}/ - Single quiz operations."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        """Gibt einzelnes Quiz zurück."""
+        """Return single quiz."""
         quiz = self._get_user_quiz(pk, request.user)
         return Response(QuizSerializer(quiz).data)
 
     def patch(self, request, pk):
-        """Aktualisiert Quiz (title, description)."""
+        """Update quiz title and description."""
         quiz = self._get_user_quiz(pk, request.user)
         serializer = QuizUpdateSerializer(
             quiz,
@@ -142,15 +118,15 @@ class QuizDetailView(APIView):
         )
 
     def delete(self, request, pk):
-        """Löscht Quiz permanent."""
+        """Delete quiz permanently."""
         quiz = self._get_user_quiz(pk, request.user)
         quiz.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def _get_user_quiz(self, pk, user):
-        """Holt Quiz und prüft Ownership."""
+        """Get quiz and verify ownership."""
         quiz = get_object_or_404(Quiz, pk=pk)
         if quiz.user != user:
             from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Quiz gehört nicht dem Benutzer.")
+            raise PermissionDenied("Quiz does not belong to user.")
         return quiz

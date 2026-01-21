@@ -1,0 +1,1 @@
+"""Quizzes app - Quiz management and generation."""

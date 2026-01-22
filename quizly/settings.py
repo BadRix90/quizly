@@ -1,30 +1,26 @@
-"""
-Django settings for quizly project.
+"""Django settings for Quizly Backend project."""
 
-Konfiguration für:
-- JWT Authentication mit HTTP-Only Cookies
-- CORS für Frontend-Kommunikation
-- REST Framework
-"""
-
-import os
 from pathlib import Path
 from datetime import timedelta
-from dotenv import load_dotenv
+from decouple import config, Csv
 
-load_dotenv()
-
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-change-this-in-production-quizly-2025'
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = config(
+    'SECRET_KEY',
+    default='django-insecure-CHANGE-THIS-IN-PRODUCTION-12345!@#$%'
 )
 
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,[::1],.localhost',
+    cast=Csv()
+)
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,26 +30,34 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Third Party
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    # Local Apps
     'users',
     'quizzes',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS Configuration
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:5500,http://127.0.0.1:5500',
+    cast=Csv()
+)
+
+# Cookie Security
+SECURE_COOKIES = not DEBUG
 
 ROOT_URLCONF = 'quizly.urls'
 
@@ -75,7 +79,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'quizly.wsgi.application'
 
-
 # Database
 DATABASES = {
     'default': {
@@ -84,75 +87,47 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
-
 # Internationalization
-LANGUAGE_CODE = 'de-de'
-TIME_ZONE = 'Europe/Berlin'
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
-# Static files
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# =============================================================================
-# CORS Settings - Frontend Kommunikation
-# =============================================================================
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5500',
-    'http://127.0.0.1:5500',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
-CORS_ALLOW_CREDENTIALS = True
-
-
-# =============================================================================
-# REST Framework Settings
-# =============================================================================
+# REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'users.authentication.CookieJWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
-
-# =============================================================================
-# JWT Settings - HTTP-Only Cookies
-# =============================================================================
+# JWT Configuration
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_COOKIE': 'access_token',
-    'AUTH_COOKIE_REFRESH': 'refresh_token',
-    'AUTH_COOKIE_SECURE': False,  # True in Production mit HTTPS
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': 'Lax',
-    'AUTH_COOKIE_PATH': '/',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
-
-# =============================================================================
-# Quizly Settings
-# =============================================================================
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-AUDIO_OUTPUT_PATH = BASE_DIR / 'audio'
-WHISPER_MODEL = 'base'
+# API Keys
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')

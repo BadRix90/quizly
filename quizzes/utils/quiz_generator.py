@@ -1,10 +1,3 @@
-"""
-Quizly - YouTube Video to Quiz Generator
-
-Dieses Modul konvertiert YouTube-Videos in interaktive Quizze.
-Pipeline: YouTube URL → Audio Download → Whisper Transkription → Gemini Quiz-Generierung
-"""
-
 import os
 import re
 import json

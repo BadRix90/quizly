@@ -5,20 +5,17 @@ djangorestframework==3.16.1
 # JWT Authentication
 djangorestframework-simplejwt==5.5.0
 
-# CORS Headers für Frontend-Kommunikation
+# CORS Headers
 django-cors-headers==4.9.0
+
+# Environment Variables
+python-decouple==3.8
 
 # YouTube Audio Download
 yt-dlp==2025.01.26
 
-# Whisper AI für Transkription
-# Hinweis: Benötigt FFMPEG global installiert!
-openai-whisper==20250625
-
-# Google Gemini AI für Quiz-Generierung
-# WICHTIG: google-generativeai ist deprecated seit Nov 2025!
-# Neues SDK: google-genai
+# Google Gemini AI
 google-genai==1.59.0
 
-# Umgebungsvariablen
+# Additional Dependencies
 python-dotenv==1.0.1

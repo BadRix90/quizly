@@ -1,4 +1,4 @@
-"""YouTube audio download service using yt-dlp. Requires FFMPEG globally installed."""
+"""YouTube audio download service using yt-dlp."""
 
 import os
 import yt_dlp

@@ -1,33 +1,21 @@
+"""YouTube to Quiz Generator using only Gemini (no Whisper, no FFmpeg)."""
+
 import os
 import re
 import json
 import yt_dlp
-import whisper
 from google import genai
-from dotenv import load_dotenv
+from decouple import config
 
-# Umgebungsvariablen laden
-load_dotenv()
-
-# Gemini API Key aus Umgebungsvariable
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
+GEMINI_API_KEY = config('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY nicht in .env gefunden!")
+    raise ValueError("GEMINI_API_KEY not found in .env!")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def extract_video_id(url: str) -> str:
-    """
-    Extrahiert die Video-ID aus einer YouTube-URL.
-    
-    Args:
-        url: YouTube URL (verschiedene Formate unterstützt)
-        
-    Returns:
-        Video-ID als String
-    """
+    """Extract video ID from YouTube URL."""
     if "v=" in url:
         return url.split("v=")[1].split("&")[0]
     elif "youtu.be/" in url:
@@ -36,19 +24,9 @@ def extract_video_id(url: str) -> str:
 
 
 def download_audio(url: str, output_path: str = "audio") -> str:
-    """
-    Lädt Audio von einem YouTube-Video herunter.
-    
-    Args:
-        url: YouTube Video URL
-        output_path: Zielverzeichnis für Audio-Datei
-        
-    Returns:
-        Pfad zur heruntergeladenen Audio-Datei
-    """
+    """Download audio from YouTube video."""
     video_id = extract_video_id(url)
     normalized_url = f"https://www.youtube.com/watch?v={video_id}"
-    
     tmp_filename = os.path.join(output_path, f"{video_id}.%(ext)s")
     
     ydl_opts = {
@@ -63,41 +41,30 @@ def download_audio(url: str, output_path: str = "audio") -> str:
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(normalized_url, download=True)
         filename = ydl.prepare_filename(info)
-        print(f"✅ Audio heruntergeladen: {filename}")
+        print(f"✅ Audio downloaded: {filename}")
         return filename
 
 
-def transcribe_audio(audio_path: str, model_name: str = "base") -> str:
-    """
-    Transkribiert eine Audio-Datei mit Whisper AI.
+def transcribe_audio(audio_path: str) -> str:
+    """Transcribe audio using Gemini File API."""
+    print("🔄 Uploading audio to Gemini...")
+    uploaded_file = client.files.upload(file=audio_path)
     
-    Args:
-        audio_path: Pfad zur Audio-Datei
-        model_name: Whisper Modell (tiny, base, small, medium, large)
-        
-    Returns:
-        Transkribierter Text
-    """
-    print(f"🔄 Lade Whisper-Modell '{model_name}'...")
-    model = whisper.load_model(model_name)
+    print("🔄 Transcribing audio with Gemini...")
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-exp",
+        contents=[
+            uploaded_file,
+            "Transcribe this audio file. Provide only the transcript text, no explanations."
+        ]
+    )
     
-    print("🔄 Transkribiere Audio...")
-    result = model.transcribe(audio_path)
-    
-    print("✅ Transkription abgeschlossen!")
-    return result["text"]
+    print("✅ Transcription completed!")
+    return response.text
 
 
 def clean_json_response(text: str) -> str:
-    """
-    Bereinigt JSON-Response von Markdown-Formatierung.
-    
-    Args:
-        text: Rohe Antwort von Gemini
-        
-    Returns:
-        Bereinigter JSON-String
-    """
+    """Remove markdown formatting from JSON response."""
     text = re.sub(r'^```json\s*', '', text.strip())
     text = re.sub(r'^```\s*', '', text)
     text = re.sub(r'\s*```$', '', text)
@@ -105,16 +72,8 @@ def clean_json_response(text: str) -> str:
 
 
 def generate_quiz(transcript: str) -> dict:
-    """
-    Generiert ein Quiz aus einem Transkript mit Gemini AI.
-    
-    Args:
-        transcript: Transkribierter Text des Videos
-        
-    Returns:
-        Quiz-Dictionary mit title, description und questions
-    """
-    print("🔄 Generiere Quiz mit Gemini...")
+    """Generate quiz from transcript using Gemini."""
+    print("🔄 Generating quiz with Gemini...")
     
     prompt = f"""Based on the following transcript, generate a quiz in valid JSON format.
 The quiz must follow this exact structure:
@@ -142,24 +101,19 @@ Transcript:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash-exp",
         contents=prompt
     )
     
     cleaned_text = clean_json_response(response.text)
     quiz = json.loads(cleaned_text)
     
-    print(f"✅ Quiz '{quiz['title']}' mit {len(quiz['questions'])} Fragen generiert!")
+    print(f"✅ Quiz '{quiz['title']}' with {len(quiz['questions'])} questions generated!")
     return quiz
 
 
 def run_quiz(quiz: dict):
-    """
-    Führt ein Quiz interaktiv in der Konsole aus.
-    
-    Args:
-        quiz: Quiz-Dictionary mit title, description und questions
-    """
+    """Run quiz interactively in console."""
     print("\n" + "="*50)
     print(f"🎯 {quiz['title']}")
     print(f"📝 {quiz['description']}")
@@ -169,38 +123,38 @@ def run_quiz(quiz: dict):
     questions = quiz['questions']
     
     for i, q in enumerate(questions, 1):
-        print(f"Frage {i}: {q['question_title']}\n")
+        print(f"Question {i}: {q['question_title']}\n")
         for j, option in enumerate(q['question_options']):
             print(f"  {j + 1}. {option}")
         
         while True:
             try:
-                answer = int(input("\nDeine Antwort (1-4): ")) - 1
+                answer = int(input("\nYour answer (1-4): ")) - 1
                 if 0 <= answer <= 3:
                     break
             except ValueError:
                 pass
-            print("Bitte 1-4 eingeben!")
+            print("Please enter 1-4!")
         
         selected_answer = q['question_options'][answer]
         if selected_answer == q['answer']:
-            print("✅ Richtig!\n")
+            print("✅ Correct!\n")
             score += 1
         else:
-            print(f"❌ Falsch! Richtig war: {q['answer']}\n")
+            print(f"❌ Wrong! Correct answer: {q['answer']}\n")
     
     print("="*50)
-    print(f"🏆 Ergebnis: {score}/{len(questions)} Punkten")
+    print(f"🏆 Result: {score}/{len(questions)} points")
     print("="*50)
 
 
 if __name__ == "__main__":
-    url = input("YouTube-URL eingeben: ")
+    url = input("Enter YouTube URL: ")
     
     audio_file = download_audio(url)
     transcript = transcribe_audio(audio_file)
     
-    print("\n📝 Transkription:\n")
+    print("\n📝 Transcript:\n")
     print(transcript[:500] + "..." if len(transcript) > 500 else transcript)
     
     quiz = generate_quiz(transcript)

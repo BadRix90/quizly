@@ -1,8 +1,4 @@
-"""
-Gemini AI Quiz Generation Service.
-
-Verwendet Google Gemini Flash für Quiz-Erstellung aus Transkript.
-"""
+"""Gemini AI Quiz Generation Service."""
 
 import re
 import json
@@ -11,29 +7,18 @@ from django.conf import settings
 
 
 def generate_quiz(transcript: str) -> dict:
-    """
-    Generiert Quiz aus Transkript mit Gemini AI.
-    
-    Args:
-        transcript: Transkribierter Text
-        
-    Returns:
-        Quiz-Dict mit title, description, questions
-        
-    Raises:
-        ValueError: Bei ungültiger API Response
-    """
+    """Generate quiz from transcript using Gemini AI."""
     client = _get_gemini_client()
     prompt = _build_quiz_prompt(transcript)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash-exp",
         contents=prompt
     )
     return _parse_quiz_response(response.text)
 
 
 def _get_gemini_client():
-    """Erstellt Gemini API Client."""
+    """Create Gemini API client."""
     api_key = settings.GEMINI_API_KEY
     if not api_key:
         raise ValueError("GEMINI_API_KEY not configured.")
@@ -41,7 +26,7 @@ def _get_gemini_client():
 
 
 def _build_quiz_prompt(transcript: str) -> str:
-    """Erstellt Prompt für Quiz-Generierung."""
+    """Build prompt for quiz generation."""
     return f"""Based on the following transcript, generate a quiz in valid JSON format.
 The quiz must follow this exact structure:
 {{
@@ -65,7 +50,7 @@ Transcript:
 
 
 def _parse_quiz_response(text: str) -> dict:
-    """Bereinigt und parst JSON Response."""
+    """Clean and parse JSON response."""
     cleaned = re.sub(r'^```json\s*', '', text.strip())
     cleaned = re.sub(r'^```\s*', '', cleaned)
     cleaned = re.sub(r'\s*```$', '', cleaned)

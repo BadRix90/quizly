@@ -11,7 +11,7 @@ def generate_quiz(transcript: str) -> dict:
     client = _get_gemini_client()
     prompt = _build_quiz_prompt(transcript)
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     return _parse_quiz_response(response.text)

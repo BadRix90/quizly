@@ -52,7 +52,7 @@ def transcribe_audio(audio_path: str) -> str:
     
     print("🔄 Transcribing audio with Gemini...")
     response = client.models.generate_content(
-        model="gemini-2.0-flash-exp",
+        model="gemini-1.5-flash",
         contents=[
             uploaded_file,
             "Transcribe this audio file. Provide only the transcript text, no explanations."
@@ -101,7 +101,7 @@ Transcript:
 """
     
     response = client.models.generate_content(
-        model="gemini-2.0-flash-exp",
+        model="gemini-1.5-flash",
         contents=prompt
     )
     

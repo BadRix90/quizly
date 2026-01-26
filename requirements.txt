@@ -14,8 +14,12 @@ python-decouple==3.8
 # YouTube Audio Download
 yt-dlp==2025.01.26
 
-# Google Gemini AI
-google-genai==1.59.0
+# Audio Transcription
+openai-whisper
+ffmpeg-python
+
+# Quiz Generation
+google-generativeai
 
 # Additional Dependencies
 python-dotenv==1.0.1

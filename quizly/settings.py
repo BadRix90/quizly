@@ -46,6 +46,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'quizly.middleware.NoCacheMiddleware',
 ]
 
 # CORS Configuration
@@ -114,6 +115,9 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Audio file storage
+AUDIO_OUTPUT_PATH = BASE_DIR / 'audio'
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

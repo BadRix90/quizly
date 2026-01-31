@@ -14,12 +14,11 @@ python-decouple==3.8
 # YouTube Audio Download
 yt-dlp==2025.01.26
 
-# Audio Transcription
+# Audio Transcription (requires FFmpeg installed on system)
 openai-whisper
-ffmpeg-python
 
-# Quiz Generation
-google-generativeai
+# Quiz Generation (new SDK - https://github.com/googleapis/python-genai)
+google-genai
 
 # Additional Dependencies
 python-dotenv==1.0.1

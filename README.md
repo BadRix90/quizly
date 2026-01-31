@@ -1,20 +1,45 @@
 # Quizly Backend
 
-A Django REST API that generates interactive quizzes from YouTube videos using Google Gemini AI.
+A Django REST API that generates interactive quizzes from YouTube videos using Whisper AI for transcription and Google Gemini AI for quiz generation.
 
-## 📋 Requirements
+## Requirements
 
 ### System Requirements
 
 - **Python 3.12 or higher** (tested with Python 3.14)
-  - **IMPORTANT:** Django 6.0.1 requires at least Python 3.12
+  - Django 6.0.1 requires at least Python 3.12
+- **FFmpeg** (required for audio processing)
+
+### FFmpeg Installation
+
+FFmpeg is required by Whisper AI for audio transcription.
+
+**Windows:**
+```bash
+winget install ffmpeg
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update && sudo apt install ffmpeg
+```
+
+Verify installation:
+```bash
+ffmpeg -version
+```
 
 ### API Keys
 
 - **Google Gemini API Key** (free tier available)
   - Get your key at: https://ai.google.dev/gemini-api/docs
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone Repository
 
@@ -101,7 +126,18 @@ python manage.py runserver
 
 The backend will be available at: `http://localhost:8000`
 
-## 📚 API Documentation
+## Tech Stack
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Backend | Django 6.0.1, DRF 3.16.1 | REST API Framework |
+| Auth | djangorestframework-simplejwt | JWT with HTTP-only Cookies |
+| YouTube | yt-dlp | Audio download from YouTube |
+| Transcription | OpenAI Whisper | Local audio-to-text |
+| Quiz Generation | Google Gemini 2.5 Flash | AI quiz creation |
+| Audio Processing | FFmpeg | Required by Whisper |
+
+## API Documentation
 
 ### Authentication
 
@@ -156,7 +192,7 @@ Sets `access_token` (30min) and `refresh_token` (24h) as HTTP-only cookies.
 
 #### Logout
 
-**Endpoint:** `POST /api/logout/`  
+**Endpoint:** `POST /api/logout/`
 **Authentication:** Required
 
 **Response:** `200 OK`
@@ -168,7 +204,7 @@ Sets `access_token` (30min) and `refresh_token` (24h) as HTTP-only cookies.
 
 #### Refresh Token
 
-**Endpoint:** `POST /api/token/refresh/`  
+**Endpoint:** `POST /api/token/refresh/`
 **Authentication:** Required (refresh_token cookie)
 
 **Response:** `200 OK`
@@ -183,7 +219,7 @@ Sets `access_token` (30min) and `refresh_token` (24h) as HTTP-only cookies.
 
 #### Create Quiz
 
-**Endpoint:** `POST /api/createQuiz/`  
+**Endpoint:** `POST /api/createQuiz/`
 **Authentication:** Required
 
 **Request Body:**
@@ -214,19 +250,19 @@ Sets `access_token` (30min) and `refresh_token` (24h) as HTTP-only cookies.
 
 #### List All Quizzes
 
-**Endpoint:** `GET /api/quizzes/`  
+**Endpoint:** `GET /api/quizzes/`
 **Authentication:** Required
 
 Returns all quizzes for the authenticated user.
 
 #### Get Specific Quiz
 
-**Endpoint:** `GET /api/quizzes/{id}/`  
+**Endpoint:** `GET /api/quizzes/{id}/`
 **Authentication:** Required
 
 #### Update Quiz
 
-**Endpoint:** `PATCH /api/quizzes/{id}/`  
+**Endpoint:** `PATCH /api/quizzes/{id}/`
 **Authentication:** Required
 
 **Request Body:**
@@ -239,14 +275,14 @@ Returns all quizzes for the authenticated user.
 
 #### Delete Quiz
 
-**Endpoint:** `DELETE /api/quizzes/{id}/`  
+**Endpoint:** `DELETE /api/quizzes/{id}/`
 **Authentication:** Required
 
 **Response:** `204 No Content`
 
-**⚠️ Warning:** Deletion is permanent and cannot be undone!
+**Warning:** Deletion is permanent and cannot be undone!
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 quizly/
@@ -254,22 +290,25 @@ quizly/
 │   ├── settings.py        # Main configuration
 │   └── urls.py            # Root URL routing
 ├── users/                 # User authentication app
-│   ├── api/              # API endpoints
-│   ├── migrations/       # Database migrations
+│   ├── views.py          # Auth endpoints
+│   ├── serializers.py    # Request/Response serialization
 │   └── authentication.py # JWT cookie authentication
 ├── quizzes/              # Quiz management app
-│   ├── api/             # API endpoints
-│   ├── migrations/      # Database migrations
-│   └── utils/           # Helper functions
-│       └── quiz_generator.py  # YouTube → Quiz pipeline
+│   ├── views.py         # Quiz endpoints
+│   ├── models.py        # Quiz, Question models
+│   ├── serializers.py   # Quiz serialization
+│   ├── services/        # Business logic
+│   │   ├── youtube_service.py   # yt-dlp integration
+│   │   └── gemini_service.py    # Gemini AI integration
+│   └── utils/
+│       └── quiz_generator.py    # Whisper transcription
 ├── .env                 # Environment variables (create from template)
 ├── .env.template       # Environment template
-├── .gitignore         # Git ignore rules
-├── requirements.txt   # Python dependencies (lowercase!)
+├── requirements.txt   # Python dependencies
 └── manage.py         # Django management script
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### "Table does not exist" Error
 
@@ -279,9 +318,13 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### "Invalid API Key"
+### "Invalid API Key" or Quota Error
 
-Check that `GEMINI_API_KEY` in `.env` is set correctly.
+Check that `GEMINI_API_KEY` in `.env` is set correctly. The free tier has rate limits.
+
+### FFmpeg not found
+
+Whisper requires FFmpeg for audio processing. Install it using the commands in the Requirements section.
 
 ### CORS Errors
 
@@ -294,7 +337,7 @@ Django 6.0.1 requires Python 3.12+. Check your version:
 python --version
 ```
 
-## 🔒 Security Notes
+## Security Notes
 
 - Never commit `.env` to version control
 - Change `SECRET_KEY` in production
@@ -302,20 +345,11 @@ python --version
 - Use HTTPS in production
 - Secure cookies are enabled automatically when `DEBUG=False`
 
-## 📦 Tech Stack
-
-- Django 6.0.1
-- Django REST Framework 3.16.1
-- djangorestframework-simplejwt 5.5.0
-- python-decouple 3.8
-- yt-dlp 2025.01.26
-- google-generativeai 0.8.3
-
-## 📝 License
+## License
 
 MIT
 
-## 👥 Credits
+## Credits
 
 - Frontend provided by [Developer Akademie](https://github.com/Developer-Akademie-Backendkurs/project.Quizly)
-- Built with Django and Google Gemini AI
+- Built with Django, OpenAI Whisper and Google Gemini AI

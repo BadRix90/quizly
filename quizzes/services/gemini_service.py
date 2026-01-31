@@ -1,4 +1,4 @@
-"""Gemini AI Quiz Generation Service."""
+"""Gemini AI Quiz Generation Service using python-genai SDK."""
 
 import re
 import json
@@ -7,7 +7,19 @@ from django.conf import settings
 
 
 def generate_quiz(transcript: str) -> dict:
-    """Generate quiz from transcript using Gemini AI."""
+    """
+    Generate quiz questions from transcript using Gemini 2.5 Flash.
+
+    Args:
+        transcript: Text content to generate questions from.
+
+    Returns:
+        Dictionary with title, description and list of questions.
+
+    Raises:
+        ValueError: If GEMINI_API_KEY is not configured.
+        JSONDecodeError: If response is not valid JSON.
+    """
     client = _get_gemini_client()
     prompt = _build_quiz_prompt(transcript)
     response = client.models.generate_content(
@@ -18,7 +30,15 @@ def generate_quiz(transcript: str) -> dict:
 
 
 def _get_gemini_client():
-    """Create Gemini API client."""
+    """
+    Create Gemini API client with configured API key.
+
+    Returns:
+        genai.Client instance ready for API calls.
+
+    Raises:
+        ValueError: If GEMINI_API_KEY is not set in settings.
+    """
     api_key = settings.GEMINI_API_KEY
     if not api_key:
         raise ValueError("GEMINI_API_KEY not configured.")
@@ -26,7 +46,15 @@ def _get_gemini_client():
 
 
 def _build_quiz_prompt(transcript: str) -> str:
-    """Build prompt for quiz generation."""
+    """
+    Build the prompt for quiz generation.
+
+    Args:
+        transcript: The video transcript text.
+
+    Returns:
+        Formatted prompt string for Gemini API.
+    """
     return f"""Based on the following transcript, generate a quiz in valid JSON format.
 The quiz must follow this exact structure:
 {{
@@ -50,7 +78,18 @@ Transcript:
 
 
 def _parse_quiz_response(text: str) -> dict:
-    """Clean and parse JSON response."""
+    """
+    Clean and parse JSON response from Gemini.
+
+    Args:
+        text: Raw response text from Gemini API.
+
+    Returns:
+        Parsed dictionary with quiz data.
+
+    Raises:
+        JSONDecodeError: If cleaned text is not valid JSON.
+    """
     cleaned = re.sub(r'^```json\s*', '', text.strip())
     cleaned = re.sub(r'^```\s*', '', cleaned)
     cleaned = re.sub(r'\s*```$', '', cleaned)

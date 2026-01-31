@@ -11,6 +11,30 @@ from django.conf import settings
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 
+def _get_cookie_settings():
+    """Return JWT cookie configuration from settings."""
+    jwt = settings.SIMPLE_JWT
+    return {
+        'httponly': jwt.get('AUTH_COOKIE_HTTP_ONLY', True),
+        'secure': jwt.get('AUTH_COOKIE_SECURE', False),
+        'samesite': jwt.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+        'path': jwt.get('AUTH_COOKIE_PATH', '/')
+    }
+
+
+def _set_cookie(response, key, value):
+    """Set a single HTTP-only cookie with JWT settings."""
+    opts = _get_cookie_settings()
+    response.set_cookie(key=key, value=value, **opts)
+
+
+def _get_cookie_name(key):
+    """Get cookie name from settings with fallback."""
+    defaults = {'access': 'access_token', 'refresh': 'refresh_token'}
+    setting_keys = {'access': 'AUTH_COOKIE', 'refresh': 'AUTH_COOKIE_REFRESH'}
+    return settings.SIMPLE_JWT.get(setting_keys[key], defaults[key])
+
+
 class RegisterView(APIView):
     """Handle user registration via POST /api/register/."""
 
@@ -41,37 +65,15 @@ class LoginView(APIView):
                 {"detail": "Invalid credentials."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
         response = Response({
             "detail": "Login successfully!",
             "user": UserSerializer(user).data
         })
-
-        self._set_auth_cookies(response, refresh)
+        _set_cookie(response, _get_cookie_name('access'), str(refresh.access_token))
+        _set_cookie(response, _get_cookie_name('refresh'), str(refresh))
         return response
-
-    def _set_auth_cookies(self, response, refresh):
-        """Set access_token and refresh_token as HTTP-only cookies."""
-        jwt_settings = settings.SIMPLE_JWT
-
-        response.set_cookie(
-            key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
-            value=str(refresh.access_token),
-            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
-            secure=jwt_settings.get('AUTH_COOKIE_SECURE', False),
-            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-            path=jwt_settings.get('AUTH_COOKIE_PATH', '/')
-        )
-        response.set_cookie(
-            key=jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
-            value=str(refresh),
-            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
-            secure=jwt_settings.get('AUTH_COOKIE_SECURE', False),
-            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-            path=jwt_settings.get('AUTH_COOKIE_PATH', '/')
-        )
 
 
 class LogoutView(APIView):
@@ -81,13 +83,9 @@ class LogoutView(APIView):
 
     def post(self, request):
         """Blacklist refresh token and delete auth cookies."""
-        refresh_token = request.COOKIES.get(
-            settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
-        )
-
+        refresh_token = request.COOKIES.get(_get_cookie_name('refresh'))
         if refresh_token:
             self._blacklist_token(refresh_token)
-
         response = Response({
             "detail": "Log-Out successfully! All Tokens will be deleted. "
                       "Refresh token is now invalid."
@@ -98,22 +96,15 @@ class LogoutView(APIView):
     def _blacklist_token(self, token_str):
         """Add token to blacklist, silently ignore invalid tokens."""
         try:
-            token = RefreshToken(token_str)
-            token.blacklist()
+            RefreshToken(token_str).blacklist()
         except TokenError:
             pass
 
     def _delete_auth_cookies(self, response):
         """Remove access_token and refresh_token cookies."""
-        jwt_settings = settings.SIMPLE_JWT
-        response.delete_cookie(
-            jwt_settings.get('AUTH_COOKIE', 'access_token'),
-            path=jwt_settings.get('AUTH_COOKIE_PATH', '/')
-        )
-        response.delete_cookie(
-            jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
-            path=jwt_settings.get('AUTH_COOKIE_PATH', '/')
-        )
+        path = _get_cookie_settings()['path']
+        response.delete_cookie(_get_cookie_name('access'), path=path)
+        response.delete_cookie(_get_cookie_name('refresh'), path=path)
 
 
 class TokenRefreshView(APIView):
@@ -123,40 +114,19 @@ class TokenRefreshView(APIView):
 
     def post(self, request):
         """Generate new access token from refresh token cookie."""
-        refresh_token = request.COOKIES.get(
-            settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
-        )
-
+        refresh_token = request.COOKIES.get(_get_cookie_name('refresh'))
         if not refresh_token:
             return Response(
                 {"detail": "Refresh token not found."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-
         try:
-            refresh = RefreshToken(refresh_token)
-            new_access = str(refresh.access_token)
+            new_access = str(RefreshToken(refresh_token).access_token)
         except TokenError:
             return Response(
                 {"detail": "Invalid or expired refresh token."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-
-        response = Response({
-            "detail": "Token refreshed",
-            "access": new_access
-        })
-        self._set_access_cookie(response, new_access)
+        response = Response({"detail": "Token refreshed", "access": new_access})
+        _set_cookie(response, _get_cookie_name('access'), new_access)
         return response
-
-    def _set_access_cookie(self, response, access_token):
-        """Set new access_token cookie."""
-        jwt_settings = settings.SIMPLE_JWT
-        response.set_cookie(
-            key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
-            value=access_token,
-            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
-            secure=jwt_settings.get('AUTH_COOKIE_SECURE', False),
-            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-            path=jwt_settings.get('AUTH_COOKIE_PATH', '/')
-        )

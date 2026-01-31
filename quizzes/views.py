@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 
 from .models import Quiz, Question
@@ -127,6 +128,5 @@ class QuizDetailView(APIView):
         """Get quiz and verify ownership."""
         quiz = get_object_or_404(Quiz, pk=pk)
         if quiz.user != user:
-            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Quiz does not belong to user.")
         return quiz

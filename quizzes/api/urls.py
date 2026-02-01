@@ -1,5 +1,3 @@
-"""URL routing for quiz management endpoints."""
-
 from django.urls import path
 from .views import CreateQuizView, QuizListView, QuizDetailView
 

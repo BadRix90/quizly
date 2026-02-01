@@ -1,5 +1,3 @@
-"""Views for quiz management according to endpoint.md."""
-
 import os
 from rest_framework import status
 from rest_framework.views import APIView
@@ -8,13 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 
-from .models import Quiz, Question
-from .serializers import (
-    QuizSerializer,
-    QuizUpdateSerializer,
-    CreateQuizSerializer
-)
-from .services import download_audio, transcribe_audio, generate_quiz
+from ..models import Quiz, Question
+from .serializers import QuizSerializer, QuizUpdateSerializer, CreateQuizSerializer
+from ..services import download_audio, transcribe_audio, generate_quiz
 
 
 class CreateQuizView(APIView):

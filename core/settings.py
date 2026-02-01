@@ -47,7 +47,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'quizly.middleware.NoCacheMiddleware',
+    'core.middleware.NoCacheMiddleware',
 ]
 
 # CORS Configuration
@@ -61,7 +61,7 @@ CORS_ALLOWED_ORIGINS = config(
 # Cookie Security
 SECURE_COOKIES = not DEBUG
 
-ROOT_URLCONF = 'quizly.urls'
+ROOT_URLCONF = 'core.urls'
 
 TEMPLATES = [
     {
@@ -79,7 +79,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'quizly.wsgi.application'
+WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 DATABASES = {

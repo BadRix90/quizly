@@ -102,9 +102,17 @@ class LogoutView(APIView):
 
     def _delete_auth_cookies(self, response):
         """Remove access_token and refresh_token cookies."""
-        path = _get_cookie_settings()['path']
-        response.delete_cookie(_get_cookie_name('access'), path=path)
-        response.delete_cookie(_get_cookie_name('refresh'), path=path)
+        opts = _get_cookie_settings()
+        response.delete_cookie(
+            _get_cookie_name('access'),
+            path=opts['path'],
+            samesite=opts['samesite']
+        )
+        response.delete_cookie(
+            _get_cookie_name('refresh'),
+            path=opts['path'],
+            samesite=opts['samesite']
+        )
 
 
 class TokenRefreshView(APIView):
